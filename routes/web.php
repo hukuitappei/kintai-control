@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthenticatedSessionController as AdminAuthenticatedSessionController;
+use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,3 +23,9 @@ Route::get('/', function () {
 Route::get('/admin/login', [AdminAuthenticatedSessionController::class, 'create'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthenticatedSessionController::class, 'store']);
 Route::post('/admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
+
+// 勤怠打刻（一般ユーザー、要ログイン）。PG03: /attendance（docs/paste配下の画面設計シート）。
+Route::middleware('auth')->group(function () {
+    Route::get('/attendance', [AttendanceController::class, 'create']);
+    Route::post('/attendance', [AttendanceController::class, 'store']);
+});
