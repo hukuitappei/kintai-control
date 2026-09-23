@@ -17,7 +17,8 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/home';
+    // ログイン・会員登録成功後の遷移先（PG03・FN005: 打刻画面）。Fortifyがこの定数をデフォルトのリダイレクト先として使う。
+    public const HOME = '/attendance';
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
