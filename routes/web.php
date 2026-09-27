@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthenticatedSessionController as AdminAuthenticatedSessionController;
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,12 +15,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// 一般ユーザーの会員登録・ログイン・ログアウト（/register, /login, /logout）は
-// Fortifyパッケージ自身がルートを自動登録するため、ここで定義する必要はない。
-// ビュー・アクションはPhase2のFortifyServiceProviderで設定済み。
-
-// 管理者ログイン・ログアウトはFortifyの対象外（Fortifyは1系統のログインのみ）なので、
-// 独自にコントローラーとルートを用意する（docs/unspecified-decisions.md #実装判断）。
 Route::get('/admin/login', [AdminAuthenticatedSessionController::class, 'create'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthenticatedSessionController::class, 'store']);
 Route::post('/admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
@@ -28,4 +23,19 @@ Route::post('/admin/logout', [AdminAuthenticatedSessionController::class, 'destr
 Route::middleware('auth')->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'create']);
     Route::post('/attendance', [AttendanceController::class, 'store']);
+
+    // 勤怠一覧（一般ユーザー）。PG04: /attendance/list
+    // Phase6-2で /attendance/{id} を追加するとき、{id}に"list"が当てはまらないよう
+    // このルートを先に書いておく（ルートは上から順に照合される）。
+    Route::get('/attendance/list', [AttendanceController::class, 'index']);
+
+    // 勤怠詳細（一般ユーザー。Phase7-2で管理者も共用）。Blade: url('/attendance/' . $data['id'])
+    Route::get('/attendance/{id}', [AttendanceController::class, 'show']);
+    // 修正申請（一般ユーザー。Phase7-3で管理者の直接修正も共用）。Blade: user-detail.blade.php の <form> の method を見ること
+    Route::post('/attendance/{id}', [AttendanceController::class, 'update']);
+
+    // 申請一覧（一般ユーザー。Phase8-3で管理者も共用）。PG06。ヘッダーの「申請」リンク（layouts/app.blade.php）と同じパス
+    Route::get('/stamp_correction_request/list', [ApplicationController::class, 'index']);
+    // 申請一覧の「詳細」。Blade原文のリンク先（申請id）から、紐づく勤怠詳細へリダイレクトする
+    Route::get('/application/{id}', [ApplicationController::class, 'show']);
 });
