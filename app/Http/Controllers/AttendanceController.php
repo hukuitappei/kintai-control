@@ -2,15 +2,182 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AttendanceCorrectionRequest;
 use App\Models\AttendanceRecord;
 use App\Models\User;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
+    /**
+     * 勤怠一覧（一般ユーザー）。FN023〜FN025。
+     * PG04: /attendance/list?date=2026-09（dateが無ければ今月）
+     * Blade: user/user-attendance-list.blade.php（docs/blade-contract.md 2章）
+     */
+    public function index(Request $request): View
+    {
+        $request->validate(['date' => ['nullable', 'date_format:Y-m']]);
+
+        $user = Auth::user();
+
+        // 「!」を付けると、書式に無い部分（日・時刻）が今日ではなく初期値（1日 00:00:00）になる。
+        // 付けないと、今日が31日のときに createFromFormat('Y-m', '2026-02') が「2月31日」→3月3日にずれる。
+        $date = $request->filled('date')
+            ? Carbon::createFromFormat('!Y-m', $request->input('date'))
+            : now()->startOfMonth();
+
+        $previousMonth = $date->copy()->subMonth()->format('Y-m');
+        $nextMonth = $date->copy()->addMonth()->format('Y-m');
+
+        // その月の自分の勤怠を、休憩ごとまとめて取得する（Eager Loading。N+1を避ける）。
+        // keyBy()で「'2026-09-01' => 勤怠」の形にして、日付から引けるようにしておく。
+        $attendanceRecords = $user->attendanceRecords()
+            ->with('breaks')
+            ->whereBetween('date', [$date->copy()->startOfMonth()->toDateString(), $date->copy()->endOfMonth()->toDateString()])
+            ->get()
+            ->keyBy('date');
+
+        // 勤怠が無い日も1行として並べる（FN023: 勤怠情報が無いフィールドは空白）。
+        $formattedAttendanceRecords = [];
+        foreach (CarbonPeriod::create($date->copy()->startOfMonth(), $date->copy()->endOfMonth()) as $day) {
+            $record = $attendanceRecords->get($day->toDateString());
+
+            $formattedAttendanceRecords[] = [
+                'date' => $day->isoFormat('MM/DD(ddd)'),
+                'clock_in' => $record ? Carbon::parse($record->clock_in)->format('H:i') : '',
+                'clock_out' => $record?->clock_out ? Carbon::parse($record->clock_out)->format('H:i') : '',
+                'total_break_time' => $record?->total_break_time,
+                'total_time' => $record?->total_time,
+                // idが空の行はBladeが「詳細」リンクを出さない（FN025）
+                'id' => $record?->id,
+            ];
+        }
+
+        return view('user.user-attendance-list', compact('date', 'previousMonth', 'nextMonth', 'formattedAttendanceRecords'));
+    }
+
+    /**
+     * 勤怠詳細（一般ユーザー）。FN026。
+     * URLは /attendance/{id}（Blade原文どおり。管理者と共用: docs/blade-contract.md 6章）
+     * Blade: user/user-detail.blade.php（$user, $data）
+     */
+    public function show(int $id): View
+    {
+        $user = Auth::user();
+
+        // TODO(Phase7-2 #36): 管理者（admin_status）の場合は管理者用の詳細画面に分岐する
+
+        // 見つからなければ404
+        $attendanceRecord = AttendanceRecord::with('breaks')->findOrFail($id);
+
+        // 他人の勤怠は見られないようにする（docs/blade-contract.md 6章「他人の勤怠へのアクセス防止」）
+        abort_if($attendanceRecord->user_id !== $user->id, 403);
+        // 承認待ちの申請（無ければnull）。あればBladeは閲覧のみの表示に切り替わる（FN030）
+        $application = $attendanceRecord->applications()
+            ->where('approval_status', '承認待ち')
+            ->with('proposalBreaks')
+            ->latest()
+            ->first();
+
+        // 承認待ちの申請があるときは、申請した内容（修正後の値）を表示する。
+        // 無いときは勤怠そのものの値を表示する。
+        if ($application) {
+            $clockIn = $application->new_clock_in;
+            $clockOut = $application->new_clock_out;
+            $breaks = $application->proposalBreaks;
+            $comment = $application->comment;
+        } else {
+            $clockIn = $attendanceRecord->clock_in;
+            $clockOut = $attendanceRecord->clock_out;
+            $breaks = $attendanceRecord->breaks;
+            $comment = $attendanceRecord->comment;
+        }
+
+        // Figma（勤怠詳細画面）の表示形式: 「2023年」「6月1日」「09:00」
+        $date = Carbon::parse($attendanceRecord->date);
+
+        $data = [
+            'id' => $attendanceRecord->id,
+            'year' => $date->format('Y年'),
+            'date' => $date->format('n月j日'),
+            'clock_in' => Carbon::parse($clockIn)->format('H:i'),
+            'clock_out' => $clockOut ? Carbon::parse($clockOut)->format('H:i') : '',
+            'breaks' => $breaks->map(fn ($break) => [
+                'break_in' => Carbon::parse($break->break_in)->format('H:i'),
+                'break_out' => $break->break_out ? Carbon::parse($break->break_out)->format('H:i') : '',
+            ])->all(),
+            'comment' => $comment,
+            'application' => $application,
+        ];
+
+        return view('user.user-detail', compact('user', 'data'));
+    }
+
+    /**
+     * 修正申請（一般ユーザー）。FN028〜FN030。
+     * バリデーションはAttendanceCorrectionRequestが行い、失敗すると自動で詳細画面に戻る
+     * （エラーはBladeの@errorで表示される）。
+     */
+    public function update(AttendanceCorrectionRequest $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+
+        // TODO(Phase7-3 #37): 管理者（admin_status）の場合は勤怠を直接修正する
+
+        $attendanceRecord = AttendanceRecord::findOrFail($id);
+        abort_if($attendanceRecord->user_id !== $user->id, 403);
+
+        // 承認待ちの申請がある間は、新しい申請を受け付けない（FN030）。
+        // Bladeは承認待ちのとき「修正」ボタンを出さないが、POSTを直接送られる場合に備えてここでも止める。
+        $hasPendingApplication = $attendanceRecord->applications()
+            ->where('approval_status', '承認待ち')
+            ->exists();
+        if ($hasPendingApplication) {
+            return redirect('/attendance/'.$attendanceRecord->id);
+        }
+
+        // 申請本体と申請中の休憩は「両方保存できたときだけ」確定させたいので、トランザクションで囲む。
+        // 途中で例外が起きると、それまでのINSERTもまとめて取り消される。
+        DB::transaction(function () use ($request, $user, $attendanceRecord) {
+            // リレーション経由でcreate()すると、attendance_record_idは自動で入る
+            $application = $attendanceRecord->applications()->create([
+                'user_id' => $user->id,
+                // 日付は修正できない（Bladeのnew_dateはreadonlyで「9月1日」形式）ので、勤怠の日付を使う
+                'new_date' => $attendanceRecord->date,
+                'new_clock_in' => $request->input('new_clock_in'),
+                'new_clock_out' => $request->input('new_clock_out'),
+                'comment' => $request->input('comment'),
+                // approval_statusは省略するとマイグレーションの既定値（承認待ち）になる
+                'application_date' => now()->toDateString(),
+            ]);
+
+            // 休憩は new_break_in[0], new_break_in[1], ... の配列で届く。
+            // 追加用の空欄行（開始が空）は保存しない。
+            $breakOuts = $request->input('new_break_out', []);
+            foreach ($request->input('new_break_in', []) as $index => $breakIn) {
+                if (is_null($breakIn)) {
+                    continue;
+                }
+
+                // $application->proposalBreaks（プロパティ）は「読み込んだ結果」。
+                // $application->proposalBreaks()（メソッド）は「リレーションそのもの」で、create()などの操作ができる。
+                $application->proposalBreaks()->create([
+                    'break_in' => $breakIn,
+                    'break_out' => $breakOuts[$index] ?? null,
+                ]);
+            }
+        });
+
+        // 詳細画面に戻ると、承認待ちの申請があるので閲覧のみの表示になる
+        return redirect('/attendance/'.$attendanceRecord->id);
+    }
+
     /**
      * 勤怠登録画面（打刻画面）を表示する。FN018〜FN019。
      * PG03: /attendance
@@ -54,7 +221,7 @@ class AttendanceController extends Controller
     }
 
     /**
-     * 出勤処理。FN020: 「___」のときのみ、1日1回だけ出勤できる。
+     * 出勤処理。FN020: 「勤務外」のときのみ、1日1回だけ出勤できる。
      * 属性値はUser::getAttendanceStatusAttribute()が返す文字列と揃えること。
      */
     private function clockIn(User $user): void
@@ -70,7 +237,7 @@ class AttendanceController extends Controller
     }
 
     /**
-     * 休憩入処理。FN021: 「___」のときのみ、何回でも押下できる。
+     * 休憩入処理。FN021: 「出勤中」のときのみ、何回でも押下できる。
      */
     private function breakIn(User $user): void
     {
@@ -84,7 +251,7 @@ class AttendanceController extends Controller
     }
 
     /**
-     * 休憩戻処理。FN021: 「___」のときのみ、何回でも押下できる。
+     * 休憩戻処理。FN021: 「休憩中」のときのみ、何回でも押下できる。
      * まだbreak_outが入っていない（休憩中の）breaksレコードを更新する。
      */
     private function breakOut(User $user): void
@@ -99,7 +266,7 @@ class AttendanceController extends Controller
     }
 
     /**
-     * 退勤処理。FN022: 「___」のときのみ、1日1回だけ押下できる。
+     * 退勤処理。FN022: 「出勤中」のときのみ、1日1回だけ押下できる。
      */
     private function clockOut(User $user): void
     {
