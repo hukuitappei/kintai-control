@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Controllers\Admin\AuthenticatedSessionController as AdminAuthenticatedSessionController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AttendanceController;
@@ -19,6 +20,13 @@ Route::get('/admin/login', [AdminAuthenticatedSessionController::class, 'create'
 Route::post('/admin/login', [AdminAuthenticatedSessionController::class, 'store']);
 Route::post('/admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
 
+// 管理者専用の画面。ログイン必須（auth）かつ admin_status が true（app/Http/Kernel.php のミドルウェアエイリアス）。
+// prefix('admin') で、中のパスの先頭に /admin が付く。
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+    // 日次勤怠一覧。PG08: /admin/attendance/list
+    Route::get('/attendance/list', [AdminAttendanceController::class, 'index']);
+});
+
 // 勤怠打刻（一般ユーザー、要ログイン）。PG03: /attendance（docs/paste配下の画面設計シート）。
 Route::middleware('auth')->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'create']);
@@ -29,9 +37,9 @@ Route::middleware('auth')->group(function () {
     // このルートを先に書いておく（ルートは上から順に照合される）。
     Route::get('/attendance/list', [AttendanceController::class, 'index']);
 
-    // 勤怠詳細（一般ユーザー。Phase7-2で管理者も共用）。Blade: url('/attendance/' . $data['id'])
+    // 勤怠詳細（一般ユーザー・管理者で共用。コントローラー内でadmin_statusにより分岐）。Blade: url('/attendance/' . $data['id'])
     Route::get('/attendance/{id}', [AttendanceController::class, 'show']);
-    // 修正申請（一般ユーザー。Phase7-3で管理者の直接修正も共用）。Blade: user-detail.blade.php の <form> の method を見ること
+    // 修正申請（一般ユーザー）／直接修正（管理者）で共用。コントローラー内でadmin_statusにより分岐。Blade: user-detail.blade.php の <form> の method を見ること
     Route::post('/attendance/{id}', [AttendanceController::class, 'update']);
 
     // 申請一覧（一般ユーザー。Phase8-3で管理者も共用）。PG06。ヘッダーの「申請」リンク（layouts/app.blade.php）と同じパス
