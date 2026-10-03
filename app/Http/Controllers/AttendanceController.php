@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\BuildsMonthlyAttendance;
 use App\Http\Requests\AttendanceCorrectionRequest;
 use App\Models\Application;
 use App\Models\AttendanceRecord;
 use App\Models\User;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +16,8 @@ use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
+    use BuildsMonthlyAttendance;
+
     /**
      * 勤怠一覧（一般ユーザー）。FN023〜FN025。
      * PG04: /attendance/list?date=2026-09（dateが無ければ今月）
@@ -23,44 +25,8 @@ class AttendanceController extends Controller
      */
     public function index(Request $request): View
     {
-        $request->validate(['date' => ['nullable', 'date_format:Y-m']]);
-
-        $user = Auth::user();
-
-        // 「!」を付けると、書式に無い部分（日・時刻）が今日ではなく初期値（1日 00:00:00）になる。
-        // 付けないと、今日が31日のときに createFromFormat('Y-m', '2026-02') が「2月31日」→3月3日にずれる。
-        $date = $request->filled('date')
-            ? Carbon::createFromFormat('!Y-m', $request->input('date'))
-            : now()->startOfMonth();
-
-        $previousMonth = $date->copy()->subMonth()->format('Y-m');
-        $nextMonth = $date->copy()->addMonth()->format('Y-m');
-
-        // その月の自分の勤怠を、休憩ごとまとめて取得する（Eager Loading。N+1を避ける）。
-        // keyBy()で「'2026-09-01' => 勤怠」の形にして、日付から引けるようにしておく。
-        $attendanceRecords = $user->attendanceRecords()
-            ->with('breaks')
-            ->whereBetween('date', [$date->copy()->startOfMonth()->toDateString(), $date->copy()->endOfMonth()->toDateString()])
-            ->get()
-            ->keyBy('date');
-
-        // 勤怠が無い日も1行として並べる（FN023: 勤怠情報が無いフィールドは空白）。
-        $formattedAttendanceRecords = [];
-        foreach (CarbonPeriod::create($date->copy()->startOfMonth(), $date->copy()->endOfMonth()) as $day) {
-            $record = $attendanceRecords->get($day->toDateString());
-
-            $formattedAttendanceRecords[] = [
-                'date' => $day->isoFormat('MM/DD(ddd)'),
-                'clock_in' => $record ? Carbon::parse($record->clock_in)->format('H:i') : '',
-                'clock_out' => $record?->clock_out ? Carbon::parse($record->clock_out)->format('H:i') : '',
-                'total_break_time' => $record?->total_break_time,
-                'total_time' => $record?->total_time,
-                // idが空の行はBladeが「詳細」リンクを出さない（FN025）
-                'id' => $record?->id,
-            ];
-        }
-
-        return view('user.user-attendance-list', compact('date', 'previousMonth', 'nextMonth', 'formattedAttendanceRecords'));
+        // 組み立て処理は管理者のスタッフ別月次勤怠一覧と共用（Concerns\BuildsMonthlyAttendance）
+        return view('user.user-attendance-list', $this->monthlyAttendanceData(Auth::user(), $request));
     }
 
     /**

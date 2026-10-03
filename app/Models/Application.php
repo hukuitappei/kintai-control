@@ -28,6 +28,17 @@ class Application extends Model
     ];
 
     /**
+     * new_date を Carbon として扱う（'date' キャスト）。
+     * 承認画面のBlade（admin-application-detail.blade.php）が $application->new_date->format('Y年') と
+     * 直接メソッドを呼ぶため、文字列のままだとエラーになる（docs/blade-contract.md 2章「日付キャスト必須」）。
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'new_date' => 'date',
+    ];
+
+    /**
      * この申請を行ったuser（外部キー: user_id）。
      */
     public function user(): BelongsTo

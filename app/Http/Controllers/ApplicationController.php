@@ -11,16 +11,27 @@ use Illuminate\View\View;
 class ApplicationController extends Controller
 {
     /**
-     * 申請一覧（一般ユーザー）。FN031〜FN032。
-     * PG06: /stamp_correction_request/list（Phase8-3で管理者も共用）
-     * Blade: user/user-application-list.blade.php（$user, $formattedApplications）
+     * 申請一覧。一般ユーザー（FN031〜FN032）と管理者（FN047〜FN049）で共用。
+     * /stamp_correction_request/list（admin_statusで分岐）
+     * Blade: 一般 user/user-application-list.blade.php（$user, $formattedApplications）
+     *        管理者 admin/admin-application-list.blade.php（$applications）
      * 承認待ち/承認済みのタブ分けはBladeがapproval_statusで行うので、ここでは全件渡す。
      */
     public function index(): View
     {
         $user = Auth::user();
 
-        // TODO(Phase8-3 #49): 管理者（admin_status）の場合は全員分の申請を管理者用の一覧に出す
+        // 管理者（FN047〜FN049）: 全員分の申請を出す。
+        // 管理者用Bladeは整形済みの配列ではなくモデルのCollectionを受け取り、
+        // $application->user->name と $application->AttendanceRecord->date を自分で読む。
+        // その2つのリレーションをEager Loadingしておく（N+1を避ける）。
+        if ($user->admin_status) {
+            $applications = Application::with(['user', 'AttendanceRecord'])
+                ->latest()
+                ->get();
+
+            return view('admin.admin-application-list', compact('applications'));
+        }
 
         // 対象日時は勤怠の日付を使うので、勤怠をEager Loadingしておく
         $applications = $user->applications()
