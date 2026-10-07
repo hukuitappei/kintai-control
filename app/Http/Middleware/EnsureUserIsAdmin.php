@@ -9,12 +9,12 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureUserIsAdmin
 {
     /**
-     * 管理者ルートを一般ユーザーから守る。authミドルウェアの後に使う想定
-     * （未認証はauthが先にadmin.loginへ弾くので、ここに来る時点でログイン済み）。
+     * 管理者ログイン画面（/admin/login）から入っていなければ403にする（authミドルウェアの後に使う）。
+     * 管理者でも一般ログイン画面から入った場合はスタッフとして扱うため、管理者用画面は開けない。
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->admin_status) {
+        if (! $request->session()->get('admin_login', false)) {
             abort(403);
         }
 

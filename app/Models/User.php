@@ -50,32 +50,26 @@ class User extends Authenticatable
         return $this->hasMany(AttendanceRecord::class);
     }
 
-
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
     }
 
     /**
-     * 今日の勤怠状況（勤務外/出勤中/休憩中/退勤済）。
-     * Blade: user/attendance-register.blade.php が $user->attendance_status を文字列比較で使う。
-     * docs/table-design.md: 列に持たず、今日のattendance_recordsとbreaksから計算する方針。
+     * 今日の勤怠ステータス（勤務外/出勤中/休憩中/退勤済）。FN019。
      */
     public function getAttendanceStatusAttribute(): string
     {
         $today = $this->attendanceRecords()->whereDate('date', now())->first();
 
-        // 今日の勤怠レコードがまだ無い場合 → firstはレコードが無いとnullを返す
         if (is_null($today)) {
             return '勤務外';
         }
 
-        // 退勤時刻（clock_out）が入っている場合 → NULLでなければ退勤済
-        if (!is_null($today->clock_out)) {
+        if (! is_null($today->clock_out)) {
             return '退勤済';
         }
 
-        // 休憩が始まっていて、まだ終わっていない（break_outがnull）ものがあるか
         $hasOpenBreak = $today->breaks()->whereNull('break_out')->exists();
 
         if ($hasOpenBreak) {

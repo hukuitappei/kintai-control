@@ -21,9 +21,6 @@ class ProposalBreak extends Model
         'break_out',
     ];
 
-    /**
-     * このproposal_breaksは、どのapplicationsに属するか（外部キー: application_id）。
-     */
     public function application(): BelongsTo
     {
         return $this->belongsTo(Application::class);

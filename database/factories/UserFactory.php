@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -44,8 +45,7 @@ class UserFactory extends Factory
     }
 
     /**
-     * 管理者ユーザーとして生成する状態。
-     * 使い方: User::factory()->admin()->create([...])
+     * 管理者ユーザー。
      */
     public function admin(): static
     {

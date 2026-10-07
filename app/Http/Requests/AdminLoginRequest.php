@@ -18,8 +18,7 @@ class AdminLoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        // ログインのemailには「メール形式」チェックを付けない
-        // （FN016に該当文言がなく、FN009と同じ理由。docs/unspecified-decisions.md）。
+        // FN016にメール形式の文言が無いため、形式チェックは付けない
         return [
             'email' => ['required'],
             'password' => ['required'],
@@ -27,8 +26,7 @@ class AdminLoginRequest extends FormRequest
     }
 
     /**
-     * 管理者としての認証を試みる。認証できてもadmin_statusがfalseなら拒否する
-     * （docs/blade-contract.md 6章「クロスログイン」の決定に対応）。
+     * 管理者として認証する。一般ユーザーは「ログイン情報が登録されていません」で拒否する。
      */
     public function authenticate(): void
     {

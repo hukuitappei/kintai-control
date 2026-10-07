@@ -12,7 +12,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // AttendanceSeederはUser::all()でユーザーを取得するので、呼び出す順番に注意。
+        // AttendanceSeederはユーザー作成後に実行する
         $this->call([UserSeeder::class, AttendanceSeeder::class]);
     }
 }

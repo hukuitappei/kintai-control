@@ -8,9 +8,7 @@ use Illuminate\Database\Seeder;
 class UserSeeder extends Seeder
 {
     /**
-     * 開発プロセスシートのダミーデータ要件・READMEのログイン情報と一致させる。
-     * user1・user2: 一般ユーザー（password / メール認証済み。Factoryのデフォルトのまま）。
-     * user3: 管理者（admin_status = true）。
+     * user1・user2（一般）、user3（管理者）。パスワードはいずれも password、メール認証済み。
      */
     public function run(): void
     {
