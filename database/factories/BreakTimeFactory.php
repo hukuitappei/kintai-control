@@ -3,10 +3,11 @@
 namespace Database\Factories;
 
 use App\Models\AttendanceRecord;
+use App\Models\BreakTime;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\BreakTime>
+ * @extends Factory<BreakTime>
  */
 class BreakTimeFactory extends Factory
 {

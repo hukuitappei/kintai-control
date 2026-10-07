@@ -10,8 +10,7 @@ class BreakTime extends Model
 {
     use HasFactory;
 
-    // 'Break' はPHPの予約語のため、モデル名はBreakTimeにしている（docs/table-design.md 3章）。
-    // テーブル名がモデル名から自動推測できないので、明示する。
+    // Break はPHPの予約語のため、モデル名をBreakTimeにしてテーブル名を指定する
     protected $table = 'breaks';
 
     /**
@@ -25,9 +24,6 @@ class BreakTime extends Model
         'break_out',
     ];
 
-    /**
-     * このbreaksは、どのattendance_recordsに属するか（外部キー: attendance_record_id）。
-     */
     public function attendanceRecord(): BelongsTo
     {
         return $this->belongsTo(AttendanceRecord::class);

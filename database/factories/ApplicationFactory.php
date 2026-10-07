@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Application;
 use App\Models\AttendanceRecord;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Application>
+ * @extends Factory<Application>
  */
 class ApplicationFactory extends Factory
 {
@@ -31,8 +32,7 @@ class ApplicationFactory extends Factory
     }
 
     /**
-     * 承認済みの状態。
-     * 使い方: Application::factory()->approved()->create([...])
+     * 承認済みの申請。
      */
     public function approved(): static
     {

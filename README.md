@@ -38,7 +38,7 @@ Docker（Laravel Sail）でビルドし、マイグレーションとシーデ�
 
 ## ER図
 
-（ER図は、テーブル設計の完成後に追加します）
+![ER図](images/er-diagram.png)
 
 ## URL
 

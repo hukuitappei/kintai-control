@@ -16,8 +16,7 @@ class Authenticate extends Middleware
             return null;
         }
 
-        // /admin/... への未認証アクセスは、一般用のloginではなくadmin.loginへ。
-        // $request->is('パターン') は現在のURLパスがパターンに一致するか調べる（*はワイルドカード）。
+        // 管理者画面への未認証アクセスは管理者ログインへ
         if ($request->is('admin/*')) {
             return route('admin.login');
         }

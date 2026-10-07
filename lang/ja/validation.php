@@ -1,13 +1,7 @@
 <?php
 
 return [
-    /*
-    | :attribute には attributes（下）で決めた項目名が入る。
-    | :min / :max / :size などにはルールの引数が入る。
-    | :other は same / different などで「比較対象の項目名」が入る。
-    */
-
-    // ---- 仕様書（FN003 / FN009 / FN016）で文言が指定されているもの -------------
+    // 仕様書（FN003 / FN009 / FN016）で文言が指定されているもの
     'required' => ':attributeを入力してください',
     'email' => ':attributeはメール形式で入力してください',
     'min' => [
@@ -18,7 +12,7 @@ return [
     ],
     'same' => ':otherと一致しません',
 
-    // ---- 標準（仕様書に指定なし）------------------------------------------------
+    // 仕様書に指定のないもの
     'accepted' => ':attributeを承認してください。',
     'array' => ':attributeは配列で指定してください。',
     'boolean' => ':attributeはtrueかfalseで指定してください。',
@@ -55,7 +49,6 @@ return [
     'url' => ':attributeは正しいURL形式で入力してください。',
 
     'custom' => [
-        // 項目ごとの個別メッセージが必要になったらここに追加する（例: 'email' => ['unique' => '...']）
     ],
 
     'attributes' => [

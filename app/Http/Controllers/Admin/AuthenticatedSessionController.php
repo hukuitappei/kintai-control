@@ -22,8 +22,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // ログイン成功後の遷移先はPG08（勤怠一覧画面・管理者）。
-        // docs/xxx を見て、正しいURLを埋めてみてください。
+        // 管理者ログイン画面から入った印。ログアウト時のinvalidate()で消える
+        $request->session()->put('admin_login', true);
+
         return redirect('/admin/attendance/list');
     }
 

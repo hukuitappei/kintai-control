@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -13,7 +14,6 @@ return new class extends Migration {
         Schema::create('applications', function (Blueprint $table) {
             $table->id();
 
-            // 外部キー2つ。どちらも users / attendance_records、ON DELETE CASCADE（docs/table-design.md 4章）。
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('attendance_record_id')->constrained()->cascadeOnDelete();
 
