@@ -22,7 +22,7 @@ export default defineConfig({
                 'resources/css/admin/admin-application-detail.css',
                 'resources/css/admin/staff-list.css',
                 'resources/css/admin/staff-attendance-list.css',
-                // 応用（マイ勤怠レポート）着手時に追加: 'resources/css/reports/index.css'
+                'resources/css/reports/index.css',
             ],
             refresh: true,
         }),
