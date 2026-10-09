@@ -20,6 +20,9 @@ class AttendanceController extends Controller
 
     /**
      * 勤怠一覧（一般ユーザー）。FN023〜FN025。
+     *
+     * @param  Request  $request  表示する月（Y-m）を持つリクエスト
+     * @return View 勤怠一覧画面（一般ユーザー）のビュー
      */
     public function index(Request $request): View
     {
@@ -28,6 +31,9 @@ class AttendanceController extends Controller
 
     /**
      * 勤怠詳細。一般ユーザー（FN026）と管理者（FN037）で同じURLを使い、どちらのログイン画面から入ったかで分岐する。
+     *
+     * @param  int  $id  勤怠のID
+     * @return View 勤怠詳細画面（管理者）または勤怠詳細画面（一般ユーザー）のビュー
      */
     public function show(int $id): View
     {
@@ -62,6 +68,10 @@ class AttendanceController extends Controller
 
     /**
      * 勤怠詳細の表示データ。承認待ちの申請があるときは申請内容を表示する。
+     *
+     * @param  AttendanceRecord  $attendanceRecord  表示する勤怠
+     * @param  Application|null  $application  承認待ちの申請（無ければnull）
+     * @return array<string, mixed> Bladeに渡す表示データ（年・日付・出勤・退勤・休憩・備考）
      */
     private function detailData(AttendanceRecord $attendanceRecord, ?Application $application = null): array
     {
@@ -95,6 +105,10 @@ class AttendanceController extends Controller
 
     /**
      * 修正申請（一般ユーザー。FN027〜FN030）／直接修正（管理者。FN038〜FN040）。
+     *
+     * @param  AttendanceCorrectionRequest  $request  勤怠詳細画面で入力された出勤・退勤・休憩・備考
+     * @param  int  $id  勤怠のID
+     * @return RedirectResponse 勤怠詳細画面へのリダイレクト
      */
     public function update(AttendanceCorrectionRequest $request, int $id): RedirectResponse
     {
@@ -114,16 +128,15 @@ class AttendanceController extends Controller
                 $attendanceRecord->breaks()->delete();
 
                 $breakOuts = $request->input('new_break_out', []);
-                foreach ($request->input('new_break_in', []) as $index => $breakIn) {
-                    if (is_null($breakIn)) {
-                        continue;
-                    }
-
-                    $attendanceRecord->breaks()->create([
-                        'break_in' => $breakIn,
-                        'break_out' => $breakOuts[$index] ?? null,
-                    ]);
-                }
+                $attendanceRecord->breaks()->createMany(
+                    collect($request->input('new_break_in', []))
+                        ->filter(fn ($breakIn) => ! is_null($breakIn))
+                        ->map(fn ($breakIn, $index) => [
+                            'break_in' => $breakIn,
+                            'break_out' => $breakOuts[$index] ?? null,
+                        ])
+                        ->all()
+                );
             });
 
             return redirect('/attendance/'.$attendanceRecord->id);
@@ -151,16 +164,15 @@ class AttendanceController extends Controller
             ]);
 
             $breakOuts = $request->input('new_break_out', []);
-            foreach ($request->input('new_break_in', []) as $index => $breakIn) {
-                if (is_null($breakIn)) {
-                    continue;
-                }
-
-                $application->proposalBreaks()->create([
-                    'break_in' => $breakIn,
-                    'break_out' => $breakOuts[$index] ?? null,
-                ]);
-            }
+            $application->proposalBreaks()->createMany(
+                collect($request->input('new_break_in', []))
+                    ->filter(fn ($breakIn) => ! is_null($breakIn))
+                    ->map(fn ($breakIn, $index) => [
+                        'break_in' => $breakIn,
+                        'break_out' => $breakOuts[$index] ?? null,
+                    ])
+                    ->all()
+            );
         });
 
         return redirect('/attendance/'.$attendanceRecord->id);
@@ -168,6 +180,8 @@ class AttendanceController extends Controller
 
     /**
      * 打刻画面。FN018〜FN019。
+     *
+     * @return View 勤怠登録画面（一般ユーザー）のビュー
      */
     public function create(): View
     {
@@ -180,6 +194,9 @@ class AttendanceController extends Controller
 
     /**
      * 打刻処理。押されたボタン（name="action"）の値で振り分ける。FN020〜FN022。
+     *
+     * @param  Request  $request  押されたボタンの値（action）を持つリクエスト
+     * @return RedirectResponse 勤怠登録画面（一般ユーザー）へのリダイレクト
      */
     public function store(Request $request): RedirectResponse
     {
@@ -198,6 +215,9 @@ class AttendanceController extends Controller
 
     /**
      * 今日の勤怠（無ければnull）。
+     *
+     * @param  User  $user  対象のユーザー
+     * @return AttendanceRecord|null 今日の勤怠
      */
     private function todayRecord(User $user): ?AttendanceRecord
     {
@@ -206,6 +226,8 @@ class AttendanceController extends Controller
 
     /**
      * 出勤。勤務外のときのみ（1日1回）。FN020。
+     *
+     * @param  User  $user  打刻するユーザー
      */
     private function clockIn(User $user): void
     {
@@ -221,6 +243,8 @@ class AttendanceController extends Controller
 
     /**
      * 休憩入。出勤中のときのみ（何回でも）。FN021。
+     *
+     * @param  User  $user  打刻するユーザー
      */
     private function breakIn(User $user): void
     {
@@ -235,6 +259,8 @@ class AttendanceController extends Controller
 
     /**
      * 休憩戻。休憩中のときのみ（何回でも）。FN021。
+     *
+     * @param  User  $user  打刻するユーザー
      */
     private function breakOut(User $user): void
     {
@@ -249,6 +275,8 @@ class AttendanceController extends Controller
 
     /**
      * 退勤。出勤中のときのみ（1日1回）。FN022。
+     *
+     * @param  User  $user  打刻するユーザー
      */
     private function clockOut(User $user): void
     {

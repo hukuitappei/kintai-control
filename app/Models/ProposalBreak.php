@@ -21,6 +21,11 @@ class ProposalBreak extends Model
         'break_out',
     ];
 
+    /**
+     * この申請休憩が属する修正申請。
+     *
+     * @return BelongsTo applicationsテーブルへの多対1のリレーション
+     */
     public function application(): BelongsTo
     {
         return $this->belongsTo(Application::class);

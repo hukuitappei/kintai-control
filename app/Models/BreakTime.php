@@ -24,6 +24,11 @@ class BreakTime extends Model
         'break_out',
     ];
 
+    /**
+     * この休憩が属する勤怠。
+     *
+     * @return BelongsTo attendance_recordsテーブルへの多対1のリレーション
+     */
     public function attendanceRecord(): BelongsTo
     {
         return $this->belongsTo(AttendanceRecord::class);

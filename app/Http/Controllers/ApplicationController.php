@@ -13,6 +13,8 @@ class ApplicationController extends Controller
     /**
      * 申請一覧。一般ユーザー（FN031〜FN032）と管理者（FN047〜FN049）で同じURLを使い、どちらのログイン画面から入ったかで分岐する。
      * 承認待ち/承認済みのタブ分けはBladeが行う。
+     *
+     * @return View 申請一覧画面（管理者）または申請一覧画面（一般ユーザー）のビュー
      */
     public function index(): View
     {
@@ -44,6 +46,9 @@ class ApplicationController extends Controller
 
     /**
      * 申請一覧の「詳細」（提供Bladeのリンクは /application/{申請id}）。紐づく勤怠詳細へ遷移する。FN033。
+     *
+     * @param  int  $id  修正申請のID
+     * @return RedirectResponse 勤怠詳細画面（一般ユーザー）へのリダイレクト
      */
     public function show(int $id): RedirectResponse
     {

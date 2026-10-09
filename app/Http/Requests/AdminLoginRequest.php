@@ -27,6 +27,9 @@ class AdminLoginRequest extends FormRequest
 
     /**
      * 管理者として認証する。一般ユーザーは「ログイン情報が登録されていません」で拒否する。
+     *
+     *
+     * @throws ValidationException 認証に失敗した場合、または一般ユーザーの場合
      */
     public function authenticate(): void
     {
