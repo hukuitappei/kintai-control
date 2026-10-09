@@ -13,6 +13,9 @@ class ApprovalController extends Controller
 {
     /**
      * 修正申請承認画面（管理者）。FN050。
+     *
+     * @param  int  $id  修正申請のID
+     * @return View 修正申請承認画面（管理者）のビュー
      */
     public function show(int $id): View
     {
@@ -30,6 +33,9 @@ class ApprovalController extends Controller
 
     /**
      * 承認処理（管理者）。申請内容で勤怠と休憩を更新し、申請を承認済みにする。FN051。
+     *
+     * @param  int  $id  修正申請のID
+     * @return RedirectResponse 修正申請承認画面（管理者）へのリダイレクト
      */
     public function approve(int $id): RedirectResponse
     {
@@ -50,12 +56,12 @@ class ApprovalController extends Controller
 
             // 休憩は申請の内容どおりに作り直す
             $attendanceRecord->breaks()->delete();
-            foreach ($application->proposalBreaks as $proposalBreak) {
-                $attendanceRecord->breaks()->create([
+            $attendanceRecord->breaks()->createMany(
+                $application->proposalBreaks->map(fn ($proposalBreak) => [
                     'break_in' => $proposalBreak->break_in,
                     'break_out' => $proposalBreak->break_out,
-                ]);
-            }
+                ])->all()
+            );
 
             $application->update(['approval_status' => '承認済み']);
         });

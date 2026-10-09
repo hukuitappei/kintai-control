@@ -45,11 +45,21 @@ class User extends Authenticatable
         'admin_status' => 'boolean',
     ];
 
+    /**
+     * このユーザーの勤怠。
+     *
+     * @return HasMany attendance_recordsテーブルへの1対多のリレーション
+     */
     public function attendanceRecords(): HasMany
     {
         return $this->hasMany(AttendanceRecord::class);
     }
 
+    /**
+     * このユーザーが出した修正申請。
+     *
+     * @return HasMany applicationsテーブルへの1対多のリレーション
+     */
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
@@ -57,6 +67,8 @@ class User extends Authenticatable
 
     /**
      * 今日の勤怠ステータス（勤務外/出勤中/休憩中/退勤済）。FN019。
+     *
+     * @return string 勤務外・出勤中・休憩中・退勤済のいずれか
      */
     public function getAttendanceStatusAttribute(): string
     {

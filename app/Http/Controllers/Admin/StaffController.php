@@ -10,6 +10,8 @@ class StaffController extends Controller
 {
     /**
      * スタッフ一覧（管理者）。FN041〜FN042。
+     *
+     * @return View スタッフ一覧画面（管理者）のビュー
      */
     public function index(): View
     {

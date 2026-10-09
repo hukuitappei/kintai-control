@@ -16,6 +16,9 @@ class AttendanceController extends Controller
 
     /**
      * 日次勤怠一覧（管理者）。FN034〜FN036。
+     *
+     * @param  Request  $request  表示する日付（Y-m-d）を持つリクエスト
+     * @return View 勤怠一覧画面（管理者）のビュー
      */
     public function index(Request $request): View
     {
@@ -41,6 +44,10 @@ class AttendanceController extends Controller
 
     /**
      * スタッフ別月次勤怠一覧（管理者）。FN043〜FN044、FN046。
+     *
+     * @param  Request  $request  表示する月（Y-m）を持つリクエスト
+     * @param  int  $id  スタッフ（一般ユーザー）のID
+     * @return View スタッフ別勤怠一覧画面（管理者）のビュー
      */
     public function staff(Request $request, int $id): View
     {

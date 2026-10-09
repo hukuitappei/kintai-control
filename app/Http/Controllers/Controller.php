@@ -13,6 +13,8 @@ class Controller extends BaseController
     /**
      * 管理者ログイン画面（/admin/login）から入ったか。共用URLの一般用・管理者用の切り替えに使う（PG12）。
      * 管理者が一般ログイン画面（/login）から入った場合はスタッフとして扱う。
+     *
+     * @return bool 管理者ログイン画面から入っていればtrue
      */
     protected function loggedInAsAdmin(): bool
     {

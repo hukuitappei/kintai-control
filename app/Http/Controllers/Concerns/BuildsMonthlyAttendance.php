@@ -13,6 +13,10 @@ use Illuminate\Http\Request;
 trait BuildsMonthlyAttendance
 {
     /**
+     * 指定した月の勤怠を、勤怠が無い日も含めて1日1行の表示データにする。
+     *
+     * @param  User  $user  勤怠を表示するユーザー
+     * @param  Request  $request  表示する月（Y-m）を持つリクエスト
      * @return array{date: Carbon, previousMonth: string, nextMonth: string, formattedAttendanceRecords: array}
      */
     private function monthlyAttendanceData(User $user, Request $request): array
@@ -34,19 +38,20 @@ trait BuildsMonthlyAttendance
             ->keyBy('date');
 
         // 勤怠が無い日も1行として並べる
-        $formattedAttendanceRecords = [];
-        foreach (CarbonPeriod::create($date->copy()->startOfMonth(), $date->copy()->endOfMonth()) as $day) {
-            $record = $attendanceRecords->get($day->toDateString());
+        $formattedAttendanceRecords = collect(CarbonPeriod::create($date->copy()->startOfMonth(), $date->copy()->endOfMonth()))
+            ->map(function ($day) use ($attendanceRecords) {
+                $record = $attendanceRecords->get($day->toDateString());
 
-            $formattedAttendanceRecords[] = [
-                'date' => $day->isoFormat('MM/DD(ddd)'),
-                'clock_in' => $record ? Carbon::parse($record->clock_in)->format('H:i') : '',
-                'clock_out' => $record?->clock_out ? Carbon::parse($record->clock_out)->format('H:i') : '',
-                'total_break_time' => $record?->total_break_time,
-                'total_time' => $record?->total_time,
-                'id' => $record?->id,
-            ];
-        }
+                return [
+                    'date' => $day->isoFormat('MM/DD(ddd)'),
+                    'clock_in' => $record ? Carbon::parse($record->clock_in)->format('H:i') : '',
+                    'clock_out' => $record?->clock_out ? Carbon::parse($record->clock_out)->format('H:i') : '',
+                    'total_break_time' => $record?->total_break_time,
+                    'total_time' => $record?->total_time,
+                    'id' => $record?->id,
+                ];
+            })
+            ->all();
 
         return compact('date', 'previousMonth', 'nextMonth', 'formattedAttendanceRecords');
     }
