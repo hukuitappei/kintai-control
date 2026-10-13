@@ -13,6 +13,6 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // AttendanceSeederはユーザー作成後に実行する
-        $this->call([UserSeeder::class, AttendanceSeeder::class]);
+        $this->call([UserSeeder::class, AttendanceSeeder::class, ReportAttendanceSeeder::class]);
     }
 }

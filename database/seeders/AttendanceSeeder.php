@@ -9,11 +9,12 @@ use Illuminate\Support\Carbon;
 class AttendanceSeeder extends Seeder
 {
     /**
-     * 全ユーザーに、直近の平日30日分の勤怠（09:00-18:00）と休憩（12:00-13:00）を作成する。
+     * user1 以外の全ユーザーに、直近の平日30日分の勤怠（09:00-18:00）と休憩（12:00-13:00）を作成する。
+     * user1 はマイ勤怠レポートの想定値に合わせるため、ReportAttendanceSeeder で作成する。
      */
     public function run(): void
     {
-        User::all()->each(function (User $user) {
+        User::where('email', '!=', 'user1@example.com')->get()->each(function (User $user) {
             $date = Carbon::yesterday();
             $created = 0;
 

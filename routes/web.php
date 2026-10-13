@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AuthenticatedSessionController as AdminAuthentica
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/attendance', [AttendanceController::class, 'store']);
     // /attendance/{id} より先に定義する
     Route::get('/attendance/list', [AttendanceController::class, 'index']);
+    Route::get('/attendance/report', [ReportController::class, 'index']);
     Route::get('/attendance/{id}', [AttendanceController::class, 'show']);
     Route::post('/attendance/{id}', [AttendanceController::class, 'update']);
 
