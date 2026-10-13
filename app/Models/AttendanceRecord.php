@@ -72,13 +72,21 @@ class AttendanceRecord extends Model
      */
     public function getTotalTimeAttribute(): ?string
     {
+        return is_null($this->work_minutes) ? null : self::minutesToTime($this->work_minutes);
+    }
+
+    /**
+     * 労働時間（分）。出勤から退勤までの時間から休憩を除いたもの。退勤前はnull。
+     *
+     * @return int|null 労働時間（分）。退勤前はnull
+     */
+    public function getWorkMinutesAttribute(): ?int
+    {
         if (is_null($this->clock_out)) {
             return null;
         }
 
-        $workMinutes = Carbon::parse($this->clock_in)->diffInMinutes(Carbon::parse($this->clock_out));
-
-        return self::minutesToTime($workMinutes - $this->breakMinutes());
+        return Carbon::parse($this->clock_in)->diffInMinutes(Carbon::parse($this->clock_out)) - $this->breakMinutes();
     }
 
     /**
