@@ -9,6 +9,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
@@ -54,5 +55,49 @@ class AttendanceController extends Controller
         $staff = User::where('admin_status', false)->findOrFail($id);
 
         return view('admin.staff-attendance-list', ['user' => $staff] + $this->monthlyAttendanceData($staff, $request));
+    }
+
+    /**
+     * スタッフ別月次勤怠一覧のCSV出力（管理者）。FN045。
+     * 画面と同じ月・同じ列（日付/出勤/退勤/休憩/合計）を出力する。
+     *
+     * @param  Request  $request  スタッフのID（user_id）と対象の年月（year_month）を持つリクエスト
+     * @return StreamedResponse CSVファイルのダウンロード
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $request->validate([
+            'user_id' => ['required', 'integer'],
+            'year_month' => ['required', 'date_format:Y-m'],
+        ]);
+
+        $staff = User::where('admin_status', false)->findOrFail($request->input('user_id'));
+
+        // 月次一覧の表示データを使い回す（BuildsMonthlyAttendance は date パラメータで月を受け取る）
+        $request->merge(['date' => $request->input('year_month')]);
+        $records = $this->monthlyAttendanceData($staff, $request)['formattedAttendanceRecords'];
+
+        // 日本語のファイル名はブラウザによって文字化けするため英数字にする
+        $fileName = 'attendance_'.$staff->id.'_'.$request->input('year_month').'.csv';
+
+        return response()->streamDownload(function () use ($records) {
+            $handle = fopen('php://output', 'w');
+
+            // Excel で開いたときに文字化けしないよう、UTF-8 の BOM を先頭に付ける
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, ['日付', '出勤', '退勤', '休憩', '合計']);
+
+            collect($records)->each(fn ($record) => fputcsv($handle, [
+                $record['date'],
+                $record['clock_in'],
+                $record['clock_out'],
+                // 画面（Blade）と同じく G:i で出力する。勤怠の無い日は空欄
+                $record['total_break_time'] ? Carbon::parse($record['total_break_time'])->format('G:i') : '',
+                $record['total_time'] ? Carbon::parse($record['total_time'])->format('G:i') : '',
+            ]));
+
+            fclose($handle);
+        }, $fileName, ['Content-Type' => 'text/csv']);
     }
 }

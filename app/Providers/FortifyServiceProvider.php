@@ -5,10 +5,12 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Http\Requests\LoginRequest;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Laravel\Fortify\Contracts\EmailVerificationNotificationSentResponse;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Http\Requests\LoginRequest as FortifyLoginRequest;
 
@@ -21,6 +23,15 @@ class FortifyServiceProvider extends ServiceProvider
     {
         // 一般ログインのバリデーションを自前のFormRequestで行う（FN008）
         $this->app->bind(FortifyLoginRequest::class, LoginRequest::class);
+
+        // 認証メール再送後、誘導画面の session('message') に表示する文言を渡す（FN012）
+        $this->app->instance(EmailVerificationNotificationSentResponse::class, new class implements EmailVerificationNotificationSentResponse
+        {
+            public function toResponse($request): RedirectResponse
+            {
+                return back()->with('message', '認証メールを再送しました。');
+            }
+        });
     }
 
     /**

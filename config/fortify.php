@@ -146,7 +146,7 @@ return [
 
     'features' => [
         Features::registration(),
-        // Features::emailVerification(), // 応用（Phase 11）で有効化する
+        Features::emailVerification(),
     ],
 
 ];
