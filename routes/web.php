@@ -32,10 +32,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/stamp_correction_request/approve/{id}', [ApprovalController::class, 'show']);
     Route::post('/stamp_correction_request/approve/{id}', [ApprovalController::class, 'approve']);
+    // スタッフ別月次勤怠一覧の「CSV出力」（提供Bladeのフォームの送信先）
+    Route::post('/export', [AdminAttendanceController::class, 'export']);
 });
 
 // 一般ユーザー（勤怠詳細・修正・申請一覧は管理者と共用し、コントローラーでログインした入口により分岐）
-Route::middleware('auth')->group(function () {
+// メール未認証のユーザーはメール認証誘導画面へ送る（FN011）
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'create']);
     Route::post('/attendance', [AttendanceController::class, 'store']);
     // /attendance/{id} より先に定義する
