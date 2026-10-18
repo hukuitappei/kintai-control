@@ -22,11 +22,15 @@ Docker（Laravel Sail）でビルドし、マイグレーションとシーデ�
 
 ### Laravel 環境構築
 
+※ `sail up` の直後は MySQL の準備に10〜20秒かかります。`Connection refused` が出た場合は、少し待ってからもう一度実行してください。
+
 1. `./vendor/bin/sail artisan key:generate`
 2. `./vendor/bin/sail artisan migrate`
 3. `./vendor/bin/sail artisan db:seed`
 4. `./vendor/bin/sail npm install`
-5. `./vendor/bin/sail npm run dev`（開発中は起動したままにしてください）
+5. `./vendor/bin/sail npm run build`（`public/build/manifest.json` を作成します。これが無いと、画面の表示とテストが「Vite manifest」のエラーで500になります）
+
+開発中にCSS・JSを変更しながら確認する場合は、別のターミナルで `./vendor/bin/sail npm run dev` を起動してください（起動中は変更がすぐ反映され、`npm run build` の成果物は使われません）。
 
 ## 使用技術（実行環境）
 
@@ -77,4 +81,5 @@ Docker（Laravel Sail）でビルドし、マイグレーションとシーデ�
 ./vendor/bin/sail artisan test
 ```
 
-テストはテスト用データベース（`testing`。Sail の MySQL コンテナ初回起動時に自動で作成されます）を使用します。
+- 上の「環境構築」（`npm run build` まで）を済ませていれば、このコマンドだけで実行できます。画面を表示するテストは Blade から CSS を読み込むため、`npm run build` の成果物（または起動中の `npm run dev`）が必要です。
+- テストはテスト用データベース（`testing`。Sail の MySQL コンテナ初回起動時に自動で作成されます）を使用するため、開発用のデータは変更されません。

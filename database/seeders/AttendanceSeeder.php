@@ -14,28 +14,25 @@ class AttendanceSeeder extends Seeder
      */
     public function run(): void
     {
-        User::where('email', '!=', 'user1@example.com')->get()->each(function (User $user) {
-            $date = Carbon::yesterday();
-            $created = 0;
+        // 昨日から遡った平日30日分（60日遡れば平日は30日以上ある）
+        $dates = collect(range(1, 60))
+            ->map(fn (int $daysAgo) => Carbon::today()->subDays($daysAgo))
+            ->filter(fn (Carbon $date) => $date->isWeekday())
+            ->take(30);
 
-            while ($created < 30) {
-                if ($date->isWeekday()) {
-                    $record = $user->attendanceRecords()->create([
-                        'date' => $date->toDateString(),
-                        'clock_in' => '09:00:00',
-                        'clock_out' => '18:00:00',
-                    ]);
+        User::where('email', '!=', 'user1@example.com')->get()->each(function (User $user) use ($dates) {
+            $dates->each(function (Carbon $date) use ($user) {
+                $record = $user->attendanceRecords()->create([
+                    'date' => $date->toDateString(),
+                    'clock_in' => '09:00:00',
+                    'clock_out' => '18:00:00',
+                ]);
 
-                    $record->breaks()->create([
-                        'break_in' => '12:00:00',
-                        'break_out' => '13:00:00',
-                    ]);
-
-                    $created++;
-                }
-
-                $date = $date->copy()->subDay();
-            }
+                $record->breaks()->create([
+                    'break_in' => '12:00:00',
+                    'break_out' => '13:00:00',
+                ]);
+            });
         });
     }
 }
