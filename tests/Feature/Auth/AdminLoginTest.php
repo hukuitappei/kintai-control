@@ -77,4 +77,18 @@ class AdminLoginTest extends TestCase
         // 共用URLを管理者用画面にするための印（C6）
         $response->assertSessionHas('admin_login', true);
     }
+
+    public function test_管理者はログアウトすると管理者ログイン画面へ遷移する(): void
+    {
+        $admin = User::where('email', 'admin@example.com')->first();
+
+        $response = $this->actingAs($admin)
+            ->withSession(['admin_login' => true])
+            ->post('/admin/logout');
+
+        $response->assertRedirect('/admin/login');
+        $this->assertGuest();
+        // ログアウトで印も消える
+        $response->assertSessionMissing('admin_login');
+    }
 }
