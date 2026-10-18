@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Laravel\Fortify\Http\Requests\LoginRequest as FortifyLoginRequest;
 
 /**
- * ログイン（一般ユーザー）。FN008〜FN009。
+ * ログイン（一般ユーザー・管理者）。FN008〜FN009、FN015〜FN016。
  * FortifyServiceProvider で Fortify の LoginRequest をこのクラスに差し替える。
  */
 class LoginRequest extends FortifyLoginRequest
@@ -20,7 +20,7 @@ class LoginRequest extends FortifyLoginRequest
      */
     public function rules(): array
     {
-        // FN009にメール形式の文言が無いため、形式チェックは付けない
+        // FN009・FN016にメール形式の文言が無いため、形式チェックは付けない
         return [
             'email' => ['required'],
             'password' => ['required'],

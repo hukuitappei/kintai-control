@@ -2,12 +2,12 @@
 
 use App\Http\Controllers\Admin\ApprovalController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
-use App\Http\Controllers\Admin\AuthenticatedSessionController as AdminAuthenticatedSessionController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,9 +19,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/admin/login', [AdminAuthenticatedSessionController::class, 'create'])->name('admin.login');
-Route::post('/admin/login', [AdminAuthenticatedSessionController::class, 'store']);
-Route::post('/admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
+// 管理者のログイン・ログアウト（FN014・FN017）。Fortify のコントローラーを使い、管理者かどうかは FortifyServiceProvider でパスを見て分ける
+Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
+Route::post('/admin/login', [AuthenticatedSessionController::class, 'store']);
+Route::post('/admin/logout', [AuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
 
 // 管理者
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
