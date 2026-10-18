@@ -2,28 +2,20 @@
 
 namespace App\Actions\Fortify;
 
-use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
 {
     /**
-     * Validate and create a newly registered user.
+     * 会員登録したユーザーを作成する。入力は RegisterController で RegisterRequest により検証済み。
      *
-     * @param  array<string, string>  $input
-     *
-     * @throws ValidationException
+     * @param  array<string, string>  $input  検証済みの入力（name・email・password）
+     * @return User 作成したユーザー
      */
     public function create(array $input): User
     {
-        // Fortifyの登録処理は配列で入力を受け取るため、RegisterRequestのルールとメッセージで検証する
-        $request = new RegisterRequest;
-        Validator::make($input, $request->rules(), $request->messages())->validate();
-
         return User::create([
             'name' => $input['name'],
             'email' => $input['email'],

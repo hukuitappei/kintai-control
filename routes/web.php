@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
@@ -18,6 +19,9 @@ use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 Route::get('/', function () {
     return view('welcome');
 });
+
+// 会員登録の送信を RegisterRequest で検証する（FN002）。Fortify の同じルートより後に定義されるため、こちらが使われる
+Route::post('/register', [RegisterController::class, 'store'])->middleware('guest');
 
 // 管理者のログイン・ログアウト（FN014・FN017）。Fortify のコントローラーを使い、管理者かどうかは FortifyServiceProvider でパスを見て分ける
 Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])->name('admin.login');
