@@ -32,7 +32,7 @@ class AttendanceController extends Controller
         $previousDay = $date->copy()->subDay()->format('Y-m-d');
         $nextDay = $date->copy()->addDay()->format('Y-m-d');
 
-        // 管理者を含む全ユーザー（FN034。コーチ回答で確認済み）
+        // 管理者を含む全ユーザー（FN034）
         $users = User::orderBy('id')->get();
 
         // Bladeがユーザーごとに where('user_id', ...) で取り出す

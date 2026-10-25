@@ -66,7 +66,7 @@ class AttendanceCorrectionTest extends TestCase
     }
 
     /**
-     * 管理者ログイン画面（/admin/login）から入った管理者としてログインする（C6）。
+     * 管理者ログイン画面（/admin/login）から入った管理者としてログインする。
      */
     private function actingAsAdmin(): static
     {
@@ -81,7 +81,7 @@ class AttendanceCorrectionTest extends TestCase
             'new_clock_in' => '19:00',
         ]));
 
-        // テストケースの文言は「出勤時間が不適切な値です」だが、FN029 の文言に合わせて実装している（requirements-review C3）
+        // テストケースの文言は「出勤時間が不適切な値です」だが、FN029 の文言に合わせて実装している
         $response->assertSessionHasErrors(['new_clock_out' => '出勤時間もしくは退勤時間が不適切な値です']);
     }
 
