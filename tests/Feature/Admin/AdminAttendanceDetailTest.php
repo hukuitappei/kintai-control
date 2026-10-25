@@ -61,7 +61,7 @@ class AdminAttendanceDetailTest extends TestCase
     {
         $response = $this->actingAsAdmin()->get('/attendance/'.$this->record->id);
 
-        // 管理者ログインから入ったので管理者用の詳細画面になる（C6）
+        // 管理者ログインから入ったので管理者用の詳細画面になる
         $response->assertViewIs('admin.admin-detail');
         // 名前欄はログイン中の管理者ではなく、勤怠の持ち主
         $response->assertSee('スタッフ 三郎');

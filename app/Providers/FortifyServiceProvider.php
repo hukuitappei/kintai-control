@@ -44,7 +44,7 @@ class FortifyServiceProvider extends ServiceProvider
             public function toResponse($request): RedirectResponse
             {
                 if ($request->is('admin/*')) {
-                    // 共用URLを管理者用画面にするための印（C6）。ログアウト時の invalidate() で消える
+                    // 共用URLを管理者用画面にするための印。ログアウト時の invalidate() で消える
                     $request->session()->put('admin_login', true);
 
                     return redirect('/admin/attendance/list');

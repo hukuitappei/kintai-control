@@ -16,7 +16,7 @@ class DateTimeTest extends TestCase
 
     public function test_現在の日時情報が_u_iと同じ形式で出力されている(): void
     {
-        // 「現在の日時」をテスト中だけ 2026-10-07(水) 09:05 に固定する（Phase9-6）
+        // 「現在の日時」をテスト中だけ 2026-10-07(水) 09:05 に固定する
         $this->travelTo(Carbon::create(2026, 10, 7, 9, 5));
 
         $user = User::factory()->create();

@@ -74,7 +74,7 @@ class AdminLoginTest extends TestCase
 
         $response->assertRedirect('/admin/attendance/list');
         $this->assertAuthenticated();
-        // 共用URLを管理者用画面にするための印（C6）
+        // 共用URLを管理者用画面にするための印
         $response->assertSessionHas('admin_login', true);
     }
 

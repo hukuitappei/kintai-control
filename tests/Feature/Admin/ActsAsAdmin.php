@@ -7,7 +7,7 @@ use App\Models\User;
 trait ActsAsAdmin
 {
     /**
-     * 管理者ログイン画面（/admin/login）から入った管理者としてログインする（C6）。
+     * 管理者ログイン画面（/admin/login）から入った管理者としてログインする。
      */
     private function actingAsAdmin(): static
     {
