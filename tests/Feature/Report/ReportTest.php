@@ -57,10 +57,11 @@ class ReportTest extends TestCase
         $this->createRecord('2026-10-06', '09:00:00', '17:00:00'); // 7h（早退）
         $this->createRecord('2026-08-03', '09:00:00', '19:00:00'); // 9h（残業1h）
 
-        // 集計しないもの: 6ヶ月より前の月、退勤前の勤怠、他のユーザーの勤怠
+        // 集計しないもの: 6ヶ月より前の月、他のユーザーの勤怠
         $this->createRecord('2026-04-30', '09:00:00', '18:00:00');
-        $this->createRecord('2026-10-15', '10:00:00', null);
         $this->createRecord('2026-10-07', '10:00:00', '23:00:00', User::factory()->create());
+        // 退勤前の勤怠は労働時間・早退・長時間労働には含めず、遅刻だけ数える
+        $this->createRecord('2026-10-15', '10:00:00', null);
 
         $response = $this->actingAs($this->user)->get('/attendance/report');
 
@@ -79,9 +80,9 @@ class ReportTest extends TestCase
             ['month' => '2026/09', 'work_minutes' => 0, 'overtime_minutes' => 0],
             ['month' => '2026/10', 'work_minutes' => 2190, 'overtime_minutes' => 330],
         ]);
-        // 9:00 ちょうどの出勤・18:00 以降の退勤・ちょうど10時間以下は数えない
+        // 9:00 ちょうどの出勤・18:00 以降の退勤・ちょうど10時間以下は数えない。遅刻は 10/02 と退勤前の 10/15
         $response->assertViewHas('anomalies', [
-            'late_count' => 1,
+            'late_count' => 2,
             'early_leave_count' => 1,
             'long_work_count' => 1,
         ]);

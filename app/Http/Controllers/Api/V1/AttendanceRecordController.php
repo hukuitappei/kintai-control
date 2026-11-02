@@ -27,12 +27,14 @@ class AttendanceRecordController extends Controller
     public function index(IndexAttendanceRecordRequest $request): AnonymousResourceCollection
     {
         $attendanceRecords = AttendanceRecord::with(['user', 'breaks'])
-            ->when($request->input('user_id'), fn (Builder $query, $userId) => $query->where('user_id', $userId))
+            // user_id=0 も「指定あり」として絞り込む（値で判定すると 0 が未指定扱いになる）
+            ->when($request->filled('user_id'), fn (Builder $query) => $query->where('user_id', $request->input('user_id')))
             ->when($request->input('date'), fn (Builder $query, $date) => $query->where('date', $date))
             // 年月（YYYY-MM）は、日付が「YYYY-MM-」で始まるもので絞る
             ->when($request->input('month'), fn (Builder $query, $month) => $query->where('date', 'like', $month.'-%'))
             ->latest('date')
-            ->paginate($request->input('per_page', 20));
+            // ?per_page=（空）は null になるため、?? で既定の20件にする
+            ->paginate($request->input('per_page') ?? 20);
 
         return AttendanceRecordResource::collection($attendanceRecords);
     }
