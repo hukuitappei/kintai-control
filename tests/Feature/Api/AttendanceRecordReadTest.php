@@ -44,12 +44,19 @@ class AttendanceRecordReadTest extends TestCase
         $this->getJson('/api/v1/attendance-records?user_id='.$user->id)->assertJsonPath('meta.total', 3);
         $this->getJson('/api/v1/attendance-records?date=2026-10-01')->assertJsonPath('meta.total', 2);
         $this->getJson('/api/v1/attendance-records?month=2026-10&user_id='.$user->id)->assertJsonPath('meta.total', 2);
+        // 存在しない user_id=0 は絞り込みが外れず、0件になる
+        $this->getJson('/api/v1/attendance-records?user_id=0')->assertJsonPath('meta.total', 0);
     }
 
     public function test_勤怠一覧のper_pageは100件まで指定できる(): void
     {
         $this->getJson('/api/v1/attendance-records?per_page=100')->assertOk();
         $this->getJson('/api/v1/attendance-records?per_page=101')->assertUnprocessable();
+    }
+
+    public function test_勤怠一覧のper_pageが空のときはデフォルトの20件になる(): void
+    {
+        $this->getJson('/api/v1/attendance-records?per_page=')->assertOk()->assertJsonPath('meta.per_page', 20);
     }
 
     public function test_勤怠詳細がユーザー・休憩・修正申請を含めてjsonで取得できる(): void

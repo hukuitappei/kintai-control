@@ -30,16 +30,17 @@ class ReportController extends Controller
     {
         $from = now()->subMonthsNoOverflow(5)->startOfMonth();
 
-        // 退勤前の勤怠は労働時間が決まらないため集計しない
         $attendanceRecords = Auth::user()->attendanceRecords()
             ->with('breaks')
             ->whereBetween('date', [$from->toDateString(), now()->endOfMonth()->toDateString()])
-            ->whereNotNull('clock_out')
             ->get();
 
+        // 退勤前の勤怠は労働時間が決まらないため、労働時間の集計には含めない
+        $completedRecords = $attendanceRecords->whereNotNull('clock_out');
+
         return view('reports.index', [
-            'summary' => $this->summary($attendanceRecords),
-            'monthlyTrend' => $this->monthlyTrend($attendanceRecords, $from),
+            'summary' => $this->summary($completedRecords),
+            'monthlyTrend' => $this->monthlyTrend($completedRecords, $from),
             'anomalies' => $this->anomalies($attendanceRecords),
         ]);
     }
@@ -89,20 +90,22 @@ class ReportController extends Controller
 
     /**
      * 当月の異常検知（遅刻・早退・長時間労働の回数）。FN056。
+     * 遅刻は出勤時刻だけで決まるため退勤前の勤怠も数え、早退・長時間労働は退勤済みの勤怠だけを数える。
      *
-     * @param  Collection<int, AttendanceRecord>  $attendanceRecords  集計する勤怠
+     * @param  Collection<int, AttendanceRecord>  $attendanceRecords  集計する勤怠（退勤前を含む）
      * @return array{late_count: int, early_leave_count: int, long_work_count: int}
      */
     private function anomalies(Collection $attendanceRecords): array
     {
         $currentMonthRecords = $attendanceRecords
             ->filter(fn (AttendanceRecord $record) => Carbon::parse($record->date)->isSameMonth(now()));
+        $completedRecords = $currentMonthRecords->whereNotNull('clock_out');
 
         return [
             // 時刻は "H:i:s" の文字列なので、そのまま大小を比べられる
             'late_count' => $currentMonthRecords->filter(fn (AttendanceRecord $record) => $record->clock_in > '09:00:00')->count(),
-            'early_leave_count' => $currentMonthRecords->filter(fn (AttendanceRecord $record) => $record->clock_out < '18:00:00')->count(),
-            'long_work_count' => $currentMonthRecords->filter(fn (AttendanceRecord $record) => $record->work_minutes > self::LONG_WORK_MINUTES)->count(),
+            'early_leave_count' => $completedRecords->filter(fn (AttendanceRecord $record) => $record->clock_out < '18:00:00')->count(),
+            'long_work_count' => $completedRecords->filter(fn (AttendanceRecord $record) => $record->work_minutes > self::LONG_WORK_MINUTES)->count(),
         ];
     }
 
