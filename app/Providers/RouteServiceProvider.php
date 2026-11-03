@@ -17,7 +17,7 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    // ログイン・会員登録成功後の遷移先（PG03・FN005: 打刻画面）。Fortifyがこの定数をデフォルトのリダイレクト先として使う。
+    // ログイン済みのユーザーがログイン画面・会員登録画面を開いたときの遷移先（RedirectIfAuthenticated。打刻画面）
     public const HOME = '/attendance';
 
     /**
